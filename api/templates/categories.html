@@ -1,0 +1,69 @@
+<html>
+  <head>
+    <title>Categories</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <script src="https://unpkg.com/vue-router@2.0.0"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.3/css/bulma.min.css">
+  </head>
+  <body>
+    <div id="app"></div>
+  </body>
+  <script>
+    Vue.config.devtools = true
+    Vue.options.delimiters = ['[[', ']]']
+
+    Vue.component('Category', {
+        props: {
+            category: { required: true }
+        },
+
+        template: `<div class="box">[[ category.id ]] - [[ category.name ]]</div>`
+    })
+
+    let app = new Vue({
+        el: '#app',
+
+        data () {
+            return {
+                categories: [],
+                category: ''
+            }
+        },
+
+        async created() {
+            this.categories = (await axios.get('/api/categories')).data
+        },
+
+        methods: {
+            async onCreate() {
+                await axios.post('/api/categories', { name: this.category })
+                window.location.reload()
+            }
+        },
+
+        template: `
+            <div class="container">
+                <h1 class="title is-1">Transaction Categories</h1>
+
+                <Category v-for="category in categories" :category="category" :key="category.id" />
+
+                <hr/>
+
+                <div class="box">
+                    <form @submit.prevent="onCreate">
+                        <div class="field">
+                            <label class="label">Category</label>
+                            <input type="text" class="input" v-model="category">
+                        </div>
+
+                        <div class="buttons is-right">
+                            <button class="button is-primary">Create</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        `
+    })
+  </script>
+</html>

@@ -1,0 +1,84 @@
+<html>
+  <head>
+    <title>Transactions</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <script src="https://unpkg.com/vue-router@2.0.0"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.3/css/bulma.min.css">
+  </head>
+  <body>
+    <div id="app">
+        
+    </div>
+  </body>
+  <script>
+    Vue.config.devtools = true
+    Vue.options.delimiters = ['[[', ']]']
+
+    Vue.component('Transaction', {
+        props: {
+            categories: { required: true },
+            transaction: { required: true }
+        },
+
+        data () {
+            return {
+                categoryId: this.transaction.category_id
+            }
+        },
+
+        template: `
+            <div class="box">
+                <div>[[ transaction.id ]] - [[ transaction.date ]] - [[ transaction.description ]] - [[ transaction.amount ]] - [[ transaction.source ]]</div>
+                <select v-model="categoryId" :key="transaction.id">
+                    <option v-for="c in categories" :value="c.id" :key="c.id" v-html="c.name"></option>
+                </select>
+            </div>
+        `,
+
+        watch: {
+            async categoryId (categoryId) {
+                await axios.put('/api/transactions/' + this.transaction.id, { category_id: categoryId })
+                Vue.set(this.transaction, 'category_id', categoryId)
+            }
+        }
+    })
+
+    let app = new Vue({
+        el: '#app',
+
+        data: () => ({
+            transactions: [],
+            categories: [],
+            filter: true
+        }),
+
+        async created() {
+            this.transactions = (await axios.get('/api/transactions')).data
+            this.categories = (await axios.get('/api/categories')).data
+        },
+
+        computed: {
+            shownTransactions () {
+                if (this.filter) {
+                    return this.transactions.filter(t => !t.category_id)
+                } else {
+                    return this.transactions
+                }
+            }
+        },
+
+        template: `
+            <div class="container">
+                <h1 class="title is-1">Transactions</h1>
+                <p>[[ shownTransactions.length ]] transactions shown</p>
+                <p><input type="checkbox" v-model="filter"> Filter Results</p>
+
+                <div v-for="transaction in shownTransactions" :key="transaction.id" class="mb-4">
+                    <Transaction :transaction="transaction" :categories="categories" />
+                </div>
+            </div>
+        `
+    })
+  </script>
+</html>
